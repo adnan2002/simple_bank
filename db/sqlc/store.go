@@ -61,8 +61,8 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		var err error
 
 		amountNumeric := pgtype.Numeric{
-			Int: big.NewInt(arg.Amount),
-			Exp: 0,
+			Int:   big.NewInt(arg.Amount),
+			Exp:   0,
 			Valid: true,
 		}
 
@@ -78,8 +78,8 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.FromAccountId,
 			Amount: pgtype.Numeric{
-				Int: new(big.Int).Neg(big.NewInt(arg.Amount)),
-				Exp: 0,
+				Int:   new(big.Int).Neg(big.NewInt(arg.Amount)),
+				Exp:   0,
 				Valid: true,
 			},
 		})
@@ -95,8 +95,79 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 			return err
 		}
 
+		err = q.SubtractAccountBalance(ctx, SubtractAccountBalanceParams{
+			ID:     arg.FromAccountId,
+			Amount: amountNumeric,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
+			ID:     arg.ToAccountId,
+			Amount: amountNumeric,
+		})
+
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 
 	return result, err
+}
+func SubtractNumericInt64(n pgtype.Numeric, amount int64) (pgtype.Numeric, error) {
+	// If the numeric is NULL
+	if !n.Valid {
+		return pgtype.Numeric{Valid: false}, nil
+	}
+
+	// Convert amount into a scaled big.Int
+	// n.Int holds the unscaled integer, and n.Exp is the base-10 exponent (negative for decimals)
+	scale := big.NewInt(1)
+	if n.Exp < 0 {
+		scale.Exp(big.NewInt(10), big.NewInt(int64(-n.Exp)), nil)
+	}
+
+	// amount * scale
+	amt := big.NewInt(amount)
+	amt.Mul(amt, scale)
+
+	// Copy the balance to avoid mutating original
+	newInt := new(big.Int).Sub(n.Int, amt)
+
+	// Build result
+	return pgtype.Numeric{
+		Int:   newInt,
+		Exp:   n.Exp,
+		Valid: true,
+	}, nil
+}
+
+func AddNumericInt64(n pgtype.Numeric, amount int64) (pgtype.Numeric, error) {
+	// If the numeric is NULL
+	if !n.Valid {
+		return pgtype.Numeric{Valid: false}, nil
+	}
+
+	// Convert amount into a scaled big.Int
+	scale := big.NewInt(1)
+	if n.Exp < 0 {
+		scale.Exp(big.NewInt(10), big.NewInt(int64(-n.Exp)), nil)
+	}
+
+	amt := big.NewInt(amount)
+	amt.Mul(amt, scale)
+
+	// Copy to avoid mutating original
+	newInt := new(big.Int).Add(n.Int, amt)
+
+	// Build result
+	return pgtype.Numeric{
+		Int:   newInt,
+		Exp:   n.Exp,
+		Valid: true,
+	}, nil
 }

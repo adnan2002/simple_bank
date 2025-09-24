@@ -1,21 +1,28 @@
 package main
 
 import (
-	"fmt"
-	"math/big"
+	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"example.com/api"
+	"example.com/db/sqlc"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const dbSource = "postgresql://root:postgres@localhost:5432/simple_bank?sslmode=disable"
+
 func main() {
-	amount := int64(10)
+	ctx := context.Background()
 
-	amountNumeric := pgtype.Numeric{
-		Int:   big.NewInt(amount),
-		Exp:   0,
-		Valid: true,
+	dbPool, err := pgxpool.New(ctx, dbSource)
+	if err != nil {
+		panic("Couldn't connect to db")
 	}
+	dbStore := db.NewStore(dbPool)
 
-	fmt.Println(amountNumeric.Int.Int64())
+	srv := api.NewServer(dbStore)
+
+	if err := srv.Start(":8032"); err != nil {
+		panic("Couldn't run server")
+	}
 
 }

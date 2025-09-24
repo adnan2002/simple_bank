@@ -22,4 +22,7 @@ test:
 startpostgrescontainer:
 	docker start postgres15
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test startpostgrescontainer
+server:
+	go run .
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test startpostgrescontainer run

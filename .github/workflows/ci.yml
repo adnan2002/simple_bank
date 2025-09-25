@@ -39,5 +39,10 @@ jobs:
           sudo mv migrate /usr/bin/
     - name: Run migrations
       run: make migrateup
+
+    - name: Install Mock
+      run: |
+          go install go.uber.org/mock/mockgen@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
     - name: Test
       run: make test

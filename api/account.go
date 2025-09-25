@@ -59,7 +59,7 @@ func (server *Server) GetAccount(c *gin.Context) {
 
 	var req getAccountRequest
 
-	if err := c.ShouldBindUri(&req); err!= nil {
+	if err := c.ShouldBindUri(&req); err != nil {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -68,13 +68,15 @@ func (server *Server) GetAccount(c *gin.Context) {
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
-		c.JSON(http.StatusNotFound, errorResponse(err))
-		return
+			c.JSON(http.StatusNotFound, errorResponse(err))
+			return
 		}
 
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
+
+
 	c.JSON(http.StatusAccepted, account)
 }
 
@@ -83,16 +85,15 @@ type listAccountsRequest struct {
 	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
 }
 
-
 func (server *Server) ListAccounts(c *gin.Context) {
 	var req listAccountsRequest
 
-	if err := c.BindQuery(&req); err!= nil {
+	if err := c.BindQuery(&req); err != nil {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 	accounts, err := server.Store.ListAccounts(c, db.ListAccountsParams{
-		Limit: req.PageSize,
+		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	})
 
@@ -103,5 +104,3 @@ func (server *Server) ListAccounts(c *gin.Context) {
 	}
 	c.JSON(http.StatusAccepted, accounts)
 }
-
-

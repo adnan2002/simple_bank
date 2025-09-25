@@ -25,4 +25,7 @@ startpostgrescontainer:
 server:
 	go run .
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test startpostgrescontainer run
+mock:
+	mockgen -package mock -destination db/mock/store.go example.com/db/sqlc Store
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test startpostgrescontainer run mock

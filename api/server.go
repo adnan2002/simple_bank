@@ -2,7 +2,10 @@ package api
 
 import (
 	db "example.com/db/sqlc"
+	"example.com/db/util"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 )
 
 type Server struct {
@@ -17,9 +20,14 @@ func NewServer(store db.Store) *Server {
 		Router: r,
 	}
 
+	if value, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		value.RegisterValidation("currency", util.Currency)
+	}
+
 	server.Router.POST("/accounts", server.CreateAccount)
 	server.Router.GET("/accounts/:id", server.GetAccount)
 	server.Router.GET("/accounts", server.ListAccounts)
+	server.Router.POST("/transfers", server.CreateTransfer)
 
 	return server
 }

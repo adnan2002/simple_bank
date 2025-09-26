@@ -3,7 +3,6 @@ package api
 import (
 	"math/big"
 	"net/http"
-
 	db "example.com/db/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"

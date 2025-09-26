@@ -76,7 +76,6 @@ func (server *Server) GetAccount(c *gin.Context) {
 		return
 	}
 
-
 	c.JSON(http.StatusAccepted, account)
 }
 
@@ -98,7 +97,6 @@ func (server *Server) ListAccounts(c *gin.Context) {
 	})
 
 	if err != nil {
-
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

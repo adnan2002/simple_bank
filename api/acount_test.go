@@ -82,7 +82,7 @@ func TestGetAccount(t *testing.T) {
 			mockStore := mock.NewMockStore(ctrl)
 			tc.BuildStub(mockStore)
 
-			server := NewServer(mockStore)
+			server := newTestServer(t, mockStore)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/accounts/%v", tc.AccountId)
@@ -182,7 +182,7 @@ func TestCreateAccount(t *testing.T) {
 			mockStore := mock.NewMockStore(ctrl)
 			tc.BuildStub(mockStore)
 
-			server := NewServer(mockStore)
+			server := newTestServer(t, mockStore)
 			recorder := httptest.NewRecorder()
 
 			url := "/accounts"
@@ -275,7 +275,7 @@ func TestListAccounts(t *testing.T) {
 			mockStore := mock.NewMockStore(ctrl)
 			tc.BuildStub(mockStore)
 
-			server := NewServer(mockStore)
+			server := newTestServer(t, mockStore)
 			recorder := httptest.NewRecorder()
 
 			if tc.Name == "Bad Request" {

@@ -1,38 +1,58 @@
 package api
 
 import (
+
 	db "example.com/db/sqlc"
 	"example.com/db/util"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"example.com/token"
 )
 
 type Server struct {
+	Config util.Config
+	TokenMaker token.Maker
 	Store  db.Store
 	Router *gin.Engine
 }
 
-func NewServer(store db.Store) *Server {
+func NewServer(store db.Store, config util.Config) (*Server, error) {
 	r := gin.Default()
+	tokenMaker, err := token.NewPasetoMaker(config.Token)
+	if err != nil {
+		return nil, err
+	}
 	server := &Server{
 		Store:  store,
 		Router: r,
+		Config: config,
+		TokenMaker: tokenMaker,
 	}
 
 	if value, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		value.RegisterValidation("currency", util.Currency)
 	}
 
+	authorized := server.Router.Group("/")
+
+	authorized.Use(AuthMiddleware(server.TokenMaker))
+	{
+		server.Router.GET("/users", server.GetUser)
+
+
+	}
+
+
 	server.Router.POST("/accounts", server.CreateAccount)
 	server.Router.GET("/accounts/:id", server.GetAccount)
 	server.Router.GET("/accounts", server.ListAccounts)
 	server.Router.POST("/transfers", server.CreateTransfer)
 	server.Router.POST("/users",server.CreateUser)
-	server.Router.GET("/users", server.GetUser)
+	server.Router.POST("/users/login", server.LoginUser)
 
 
-	return server
+	return server, nil
 }
 
 func errorResponse(err error) gin.H {

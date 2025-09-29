@@ -14,6 +14,9 @@ var testDB *pgxpool.Pool
 
 const dbSource = "postgresql://root:postgres@localhost:5432/simple_bank?sslmode=disable"
 
+
+
+
 func TestMain(m *testing.M) {
 	var err error
 	testDB, err = pgxpool.New(context.Background(), dbSource)

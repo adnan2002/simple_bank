@@ -39,7 +39,12 @@ func main() {
 
 	// Create store and server
 	store := db.NewStore(dbPool)
-	server := api.NewServer(store)
+	server, err := api.NewServer(store, config)
+
+	if err != nil {
+		log.Fatalf("failed to start server")
+	}
+
 
 	// Start server
 	addr := fmt.Sprintf(":%s", config.AppPort)

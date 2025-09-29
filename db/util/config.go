@@ -1,6 +1,8 @@
 package util
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 )
 
@@ -12,6 +14,8 @@ type Config struct {
 	DbSslMode string `mapstructure:"DB_SSL_MODE"`
 	DbName    string `mapstructure:"DB_NAME"`
 	AppPort   string `mapstructure:"APP_PORT"`
+	Token	  string `mapstructure:"TOKEN"`
+	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

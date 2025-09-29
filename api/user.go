@@ -1,7 +1,9 @@
 package api
 
 import (
+	"errors"
 	"net/http"
+	"time"
 
 	db "example.com/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -51,45 +53,100 @@ func (server *Server) CreateUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, user)
-
-}
-
-
-type getUserRequest struct {
-	Username string `form:"username" binding:"required,min=1"`
-	Password string `form:"password" binding:"required,min=1"`
-}
-
-func (server *Server) GetUser(c *gin.Context) {
-
-
-	var req getUserRequest
-
-	if err := c.BindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	// fmt.Printf("%+v\n",req)
-
-	user, err := server.Store.GetUser(c, req.Username)
+	token, err := server.TokenMaker.CreateToken(user.Username, server.Config.AccessTokenDuration)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
+	response := struct{
+	Username     string `json:"username"`
+    FullName     string `json:"full_name"`
+    Email        string `json:"email"`
+    Token 	 	 string `json:"token"`
+	TokenDuration time.Duration `json:"token_duration"`
+	}{
+		Username: user.Username,
+		FullName: user.FullName,
+		Email: user.Email,
+		Token: token,
+		TokenDuration: server.Config.AccessTokenDuration,
+	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	c.JSON(http.StatusCreated, response)
 
+}
+
+
+
+
+
+
+
+func (server *Server) GetUser(c *gin.Context) {
+
+	userId, ok := c.Get("auth_username")
+
+	if !ok{
+		c.JSON(http.StatusInternalServerError, errorResponse(errors.New("not authneticated")))
+		return
+
+	}
+	// 4. Use payload.Username to fetch the user
+	user, err := server.Store.GetUser(c, userId.(string))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, errorResponse(err))
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
+	// 5. Return user info (never return password hash)
+	c.JSON(http.StatusOK, gin.H{
+		"username":  user.Username,
+		"full_name": user.FullName,
+		"email":     user.Email,
+	})
+}
 
 
+type LoginRequest struct {
+	Username string `json:"username" binding:"required,alphanum"`
+	Password string `json:"password" binding:"required,min=6"`
+}
 
-	c.JSON(http.StatusAccepted, user)
+func (server *Server) LoginUser(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// 1. Fetch user from database
+	user, err := server.Store.GetUser(c, req.Username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, errorResponse(errors.New("invalid username or password")))
+		return
+	}
+
+	// 2. Compare password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, errorResponse(errors.New("invalid username or password")))
+		return
+	}
+
+	// 3. Create access token
+	token, err := server.TokenMaker.CreateToken(user.Username, server.Config.AccessTokenDuration)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// 4. Return response
+	c.JSON(http.StatusOK, gin.H{
+		"username":       user.Username,
+		"full_name":      user.FullName,
+		"email":          user.Email,
+		"token":          token,
+		"token_duration": server.Config.AccessTokenDuration,
+	})
 }

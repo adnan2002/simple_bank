@@ -11,12 +11,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 type CreateUserRequest struct {
-	Username     string `json:"username" binding:"required"`
-    FullName     string `json:"full_name" binding:"required"`
-    Email        string `json:"email" binding:"required"`
-    Password 	 string `json:"password" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	FullName string `json:"full_name" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func (server *Server) CreateUser(c *gin.Context) {
@@ -35,16 +34,16 @@ func (server *Server) CreateUser(c *gin.Context) {
 	}
 
 	user, err := server.Store.CreateUser(c, db.CreateUserParams{
-		Username:    payload.Username,
-		FullName:  	payload.FullName,
-		Email:   payload.Email,
+		Username:     payload.Username,
+		FullName:     payload.FullName,
+		Email:        payload.Email,
 		PasswordHash: string(hashedPassword),
 	})
 
 	if err != nil {
-		if pgErr, ok  := err.(*pgconn.PgError); ok {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
 			switch pgErr.Code {
-				case "23505":
+			case "23505":
 				c.JSON(http.StatusForbidden, errorResponse(pgErr))
 				return
 			}
@@ -60,17 +59,17 @@ func (server *Server) CreateUser(c *gin.Context) {
 		return
 	}
 
-	response := struct{
-	Username     string `json:"username"`
-    FullName     string `json:"full_name"`
-    Email        string `json:"email"`
-    Token 	 	 string `json:"token"`
-	TokenDuration time.Duration `json:"token_duration"`
+	response := struct {
+		Username      string        `json:"username"`
+		FullName      string        `json:"full_name"`
+		Email         string        `json:"email"`
+		Token         string        `json:"token"`
+		TokenDuration time.Duration `json:"token_duration"`
 	}{
-		Username: user.Username,
-		FullName: user.FullName,
-		Email: user.Email,
-		Token: token,
+		Username:      user.Username,
+		FullName:      user.FullName,
+		Email:         user.Email,
+		Token:         token,
 		TokenDuration: server.Config.AccessTokenDuration,
 	}
 
@@ -78,18 +77,12 @@ func (server *Server) CreateUser(c *gin.Context) {
 
 }
 
-
-
-
-
-
-
 func (server *Server) GetUser(c *gin.Context) {
 
-	userId, ok := c.Get("auth_username")
+	userId, ok := c.Get(authenticatedPayload)
 
-	if !ok{
-		c.JSON(http.StatusInternalServerError, errorResponse(errors.New("not authneticated")))
+	if !ok {
+		c.JSON(http.StatusUnauthorized, errorResponse(errors.New("not authorized")))
 		return
 
 	}
@@ -100,14 +93,12 @@ func (server *Server) GetUser(c *gin.Context) {
 		return
 	}
 
-	// 5. Return user info (never return password hash)
 	c.JSON(http.StatusOK, gin.H{
 		"username":  user.Username,
 		"full_name": user.FullName,
 		"email":     user.Email,
 	})
 }
-
 
 type LoginRequest struct {
 	Username string `json:"username" binding:"required,alphanum"`

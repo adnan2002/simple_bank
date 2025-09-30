@@ -11,10 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func newTestServer(t *testing.T, store db.Store) *Server {
 	config := util.Config{
-		Token: util.RandomString(32),
+		Token:               util.RandomString(32),
 		AccessTokenDuration: time.Minute,
 	}
 
@@ -22,12 +21,10 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 
 	require.NoError(t, err)
 	return server
-} 
-
+}
 
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
-
 
 	os.Exit(m.Run())
 }

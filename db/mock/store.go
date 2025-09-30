@@ -41,6 +41,21 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 	return m.recorder
 }
 
+// AccountExists mocks base method.
+func (m *MockStore) AccountExists(ctx context.Context, arg db.AccountExistsParams) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AccountExists", ctx, arg)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AccountExists indicates an expected call of AccountExists.
+func (mr *MockStoreMockRecorder) AccountExists(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AccountExists", reflect.TypeOf((*MockStore)(nil).AccountExists), ctx, arg)
+}
+
 // AddAccountBalance mocks base method.
 func (m *MockStore) AddAccountBalance(ctx context.Context, arg db.AddAccountBalanceParams) error {
 	m.ctrl.T.Helper()
@@ -157,6 +172,20 @@ func (mr *MockStoreMockRecorder) DeleteTransfer(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransfer", reflect.TypeOf((*MockStore)(nil).DeleteTransfer), ctx, id)
 }
 
+// ExecTx mocks base method.
+func (m *MockStore) ExecTx(ctx context.Context, fn func(*db.Queries) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecTx", ctx, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecTx indicates an expected call of ExecTx.
+func (mr *MockStoreMockRecorder) ExecTx(ctx, fn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecTx", reflect.TypeOf((*MockStore)(nil).ExecTx), ctx, fn)
+}
+
 // GetAccount mocks base method.
 func (m *MockStore) GetAccount(ctx context.Context, id int64) (db.Account, error) {
 	m.ctrl.T.Helper()
@@ -185,6 +214,21 @@ func (m *MockStore) GetAccountForUpdate(ctx context.Context, id int64) (db.Accou
 func (mr *MockStoreMockRecorder) GetAccountForUpdate(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountForUpdate", reflect.TypeOf((*MockStore)(nil).GetAccountForUpdate), ctx, id)
+}
+
+// GetAccountFromOwner mocks base method.
+func (m *MockStore) GetAccountFromOwner(ctx context.Context, arg db.GetAccountFromOwnerParams) (db.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAccountFromOwner", ctx, arg)
+	ret0, _ := ret[0].(db.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAccountFromOwner indicates an expected call of GetAccountFromOwner.
+func (mr *MockStoreMockRecorder) GetAccountFromOwner(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountFromOwner", reflect.TypeOf((*MockStore)(nil).GetAccountFromOwner), ctx, arg)
 }
 
 // GetEntry mocks base method.
@@ -406,4 +450,19 @@ func (m *MockStore) UpdateTransferAmount(ctx context.Context, arg db.UpdateTrans
 func (mr *MockStoreMockRecorder) UpdateTransferAmount(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTransferAmount", reflect.TypeOf((*MockStore)(nil).UpdateTransferAmount), ctx, arg)
+}
+
+// UserExists mocks base method.
+func (m *MockStore) UserExists(ctx context.Context, username string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UserExists", ctx, username)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UserExists indicates an expected call of UserExists.
+func (mr *MockStoreMockRecorder) UserExists(ctx, username any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserExists", reflect.TypeOf((*MockStore)(nil).UserExists), ctx, username)
 }

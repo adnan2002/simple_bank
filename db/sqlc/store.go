@@ -11,6 +11,7 @@ import (
 )
 type Store interface {
 	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
+	ExecTx(ctx context.Context, fn func(*Queries) error) error
 	Querier
 }
 
@@ -27,7 +28,7 @@ func NewStore(db *pgxpool.Pool) Store {
 	}
 }
 
-func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (store *SQLStore) ExecTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ type TransferTxResult struct {
 func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 
-	err := store.execTx(ctx, func(q *Queries) error {
+	err := store.ExecTx(ctx, func(q *Queries) error {
 		var err error
 
 		amountNumeric := pgtype.Numeric{

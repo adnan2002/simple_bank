@@ -2,50 +2,46 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"example.com/token"
+	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware creates a gin.HandlerFunc that checks JWT/Paseto token validity
+const (
+	authorizationHeaderString = "Authorization"
+	authorizationPrefixString = "Bearer"
+	authenticatedPayload      = "auth_username"
+)
+
 func AuthMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 1. Extract the Authorization header
-		authHeader := c.GetHeader("Authorization")
+		authHeader := c.GetHeader(authorizationHeaderString)
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(errors.New("authorization header is missing")))
 			return
 		}
 
-		// 2. Check if it is a Bearer token
-		const bearerPrefix = "Bearer "
+		bearerPrefix := fmt.Sprintf("%s ", authorizationPrefixString)
 		if !strings.HasPrefix(authHeader, bearerPrefix) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(errors.New("invalid authorization header format")))
 			return
 		}
 
-		// 3. Get the token string
 		tokenStr := strings.TrimPrefix(authHeader, bearerPrefix)
 
-		// 4. Verify token
 		payload, err := tokenMaker.VerifyToken(tokenStr)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
-		// 5. Save the payload in Gin context (so handlers can use it)
-		c.Set("auth_username", payload.Username)
+		fmt.Println("payload username is :",payload.Username)
 
-		// 6. Continue to the next handler
+		c.Set(authenticatedPayload, payload.Username)
+
 		c.Next()
 	}
 }
-
-
-
-
-
-

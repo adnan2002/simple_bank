@@ -1,20 +1,19 @@
 package api
 
 import (
-
 	db "example.com/db/sqlc"
 	"example.com/db/util"
+	"example.com/token"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"example.com/token"
 )
 
 type Server struct {
-	Config util.Config
+	Config     util.Config
 	TokenMaker token.Maker
-	Store  db.Store
-	Router *gin.Engine
+	Store      db.Store
+	Router     *gin.Engine
 }
 
 func NewServer(store db.Store, config util.Config) (*Server, error) {
@@ -24,9 +23,9 @@ func NewServer(store db.Store, config util.Config) (*Server, error) {
 		return nil, err
 	}
 	server := &Server{
-		Store:  store,
-		Router: r,
-		Config: config,
+		Store:      store,
+		Router:     r,
+		Config:     config,
 		TokenMaker: tokenMaker,
 	}
 
@@ -38,19 +37,17 @@ func NewServer(store db.Store, config util.Config) (*Server, error) {
 
 	authorized.Use(AuthMiddleware(server.TokenMaker))
 	{
-		server.Router.GET("/users", server.GetUser)
-
+			authorized.GET("/users", server.GetUser)
+			authorized.GET("/accounts", server.ListAccounts)
+			authorized.POST("/accounts", server.CreateAccount)
+			authorized.GET("/accounts/:id", server.GetAccount)
+			authorized.POST("/transfers", server.CreateTransfer)
 
 	}
 
 
-	server.Router.POST("/accounts", server.CreateAccount)
-	server.Router.GET("/accounts/:id", server.GetAccount)
-	server.Router.GET("/accounts", server.ListAccounts)
-	server.Router.POST("/transfers", server.CreateTransfer)
-	server.Router.POST("/users",server.CreateUser)
+	server.Router.POST("/users", server.CreateUser)
 	server.Router.POST("/users/login", server.LoginUser)
-
 
 	return server, nil
 }

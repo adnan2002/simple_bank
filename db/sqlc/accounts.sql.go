@@ -11,6 +11,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const accountExists = `-- name: AccountExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM accounts
+    WHERE id = $1 AND owner = $2
+)
+`
+
+type AccountExistsParams struct {
+	ID    int64  `json:"id"`
+	Owner string `json:"owner"`
+}
+
+func (q *Queries) AccountExists(ctx context.Context, arg AccountExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, accountExists, arg.ID, arg.Owner)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const addAccountBalance = `-- name: AddAccountBalance :exec
 UPDATE accounts SET balance = balance + $1 WHERE id = $2 RETURNING id, owner, balance, currency, created_at
 `
@@ -27,9 +47,9 @@ func (q *Queries) AddAccountBalance(ctx context.Context, arg AddAccountBalancePa
 
 const createAccount = `-- name: CreateAccount :one
 INSERT INTO accounts (
-  owner, balance, currency
+owner, balance, currency
 ) VALUES (
-  $1, $2, $3
+ $1, $2, $3
 )
 RETURNING id, owner, balance, currency, created_at
 `
@@ -101,20 +121,46 @@ func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, e
 	return i, err
 }
 
+const getAccountFromOwner = `-- name: GetAccountFromOwner :one
+SELECT id, owner, balance, currency, created_at FROM accounts
+WHERE id = $1 AND owner = $2
+LIMIT 1
+`
+
+type GetAccountFromOwnerParams struct {
+	ID    int64  `json:"id"`
+	Owner string `json:"owner"`
+}
+
+func (q *Queries) GetAccountFromOwner(ctx context.Context, arg GetAccountFromOwnerParams) (Account, error) {
+	row := q.db.QueryRow(ctx, getAccountFromOwner, arg.ID, arg.Owner)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listAccounts = `-- name: ListAccounts :many
 SELECT id, owner, balance, currency, created_at FROM accounts
-ORDER BY id 
-LIMIT $1 
-OFFSET $2
+WHERE owner = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3
 `
 
 type ListAccountsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Owner  string `json:"owner"`
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
 }
 
 func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error) {
-	rows, err := q.db.Query(ctx, listAccounts, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listAccounts, arg.Owner, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

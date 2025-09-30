@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	AccountExists(ctx context.Context, arg AccountExistsParams) (bool, error)
 	AddAccountBalance(ctx context.Context, arg AddAccountBalanceParams) error
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
@@ -19,6 +20,7 @@ type Querier interface {
 	DeleteTransfer(ctx context.Context, id int64) error
 	GetAccount(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
+	GetAccountFromOwner(ctx context.Context, arg GetAccountFromOwnerParams) (Account, error)
 	GetEntry(ctx context.Context, id int64) (Entry, error)
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
 	GetTransferFromAccount(ctx context.Context, arg GetTransferFromAccountParams) ([]Transfer, error)
@@ -33,6 +35,7 @@ type Querier interface {
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) error
 	UpdateEntryAmount(ctx context.Context, arg UpdateEntryAmountParams) error
 	UpdateTransferAmount(ctx context.Context, arg UpdateTransferAmountParams) error
+	UserExists(ctx context.Context, username string) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

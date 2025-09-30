@@ -2,13 +2,12 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	db "example.com/db/sqlc"
 	"github.com/gin-gonic/gin"
 )
-
-
 
 type RequestParams struct {
 	FromAccountId int64  `json:"from_account_id"`
@@ -18,9 +17,29 @@ type RequestParams struct {
 }
 
 func (server *Server) CreateTransfer(c *gin.Context) {
+	userId, exists := c.Get(authenticatedPayload)
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, errorResponse(errors.New("not authorized")))
+		return
+
+	}
 	var payload RequestParams
 	if err := c.ShouldBindBodyWithJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	exists, err := server.Store.AccountExists(c, db.AccountExistsParams{
+		ID: payload.FromAccountId,
+		Owner: userId.(string),
+	})
+
+	if err != nil{
+		c.JSON(http.StatusUnauthorized, errorResponse(errors.New("not authorized")))
+		return
+		}
+	if !exists {
+		c.JSON(http.StatusUnauthorized, errorResponse(errors.New("not authorized")))
 		return
 	}
 
@@ -33,8 +52,8 @@ func (server *Server) CreateTransfer(c *gin.Context) {
 
 	transfer, err := server.Store.TransferTx(c, db.TransferTxParams{
 		FromAccountId: payload.FromAccountId,
-		ToAccountId: payload.ToAccountId,
-		Amount: payload.Amount,
+		ToAccountId:   payload.ToAccountId,
+		Amount:        payload.Amount,
 	})
 
 	if err != nil {
@@ -45,8 +64,6 @@ func (server *Server) CreateTransfer(c *gin.Context) {
 	c.JSON(http.StatusCreated, transfer)
 
 }
-
-
 
 func (server *Server) IsSameCurrency(toAccountId int64, currency string) bool {
 	account, err := server.Store.GetAccount(context.Background(), toAccountId)
@@ -61,9 +78,4 @@ func (server *Server) IsSameCurrency(toAccountId int64, currency string) bool {
 
 	return true
 
-
-}	
-
-
-
-
+}

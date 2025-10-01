@@ -1,5 +1,5 @@
 postgres:
-	sudo docker run --name postgres15 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:15.14-bookworm
+	sudo docker run --name postgres15 --network bank-network -e POSTGRES_USER=root -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:15.14-bookworm
 
 createdb:
 	sudo docker exec -it postgres15 createdb --username=root --owner=root simple_bank

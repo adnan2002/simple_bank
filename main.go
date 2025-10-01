@@ -21,13 +21,12 @@ func main() {
 
 	// Build DB connection string
 	dbURL := fmt.Sprintf(
-		"postgresql://%s:%s@%s:%d/%s?sslmode=%s",
+		"postgresql://%s:%s@%s:%d/%s",
 		config.DbUser,
 		config.DbPass,
 		config.DbHost,
 		config.DbPort,
 		config.DbName,
-		config.DbSslMode,
 	)
 
 	// Initialize DB connection pool

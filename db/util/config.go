@@ -11,7 +11,6 @@ type Config struct {
 	DbPort    int    `mapstructure:"DB_PORT"`
 	DbUser    string `mapstructure:"DB_USER"`
 	DbPass    string `mapstructure:"DB_PASSWORD"`
-	DbSslMode string `mapstructure:"DB_SSL_MODE"`
 	DbName    string `mapstructure:"DB_NAME"`
 	AppPort   string `mapstructure:"APP_PORT"`
 	Token	  string `mapstructure:"TOKEN"`

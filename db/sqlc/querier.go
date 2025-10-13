@@ -6,13 +6,17 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	AccountExists(ctx context.Context, arg AccountExistsParams) (bool, error)
 	AddAccountBalance(ctx context.Context, arg AddAccountBalanceParams) error
+	BlockSession(ctx context.Context, id pgtype.UUID) error
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTransfer(ctx context.Context, arg CreateTransferParams) (Transfer, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAccount(ctx context.Context, id int64) error
@@ -21,7 +25,9 @@ type Querier interface {
 	GetAccount(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
 	GetAccountFromOwner(ctx context.Context, arg GetAccountFromOwnerParams) (Account, error)
+	GetActiveSessions(ctx context.Context, arg GetActiveSessionsParams) ([]int32, error)
 	GetEntry(ctx context.Context, id int64) (Entry, error)
+	GetSession(ctx context.Context, id pgtype.UUID) (Session, error)
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
 	GetTransferFromAccount(ctx context.Context, arg GetTransferFromAccountParams) ([]Transfer, error)
 	GetTransferFromAndToAccount(ctx context.Context, arg GetTransferFromAndToAccountParams) ([]Transfer, error)

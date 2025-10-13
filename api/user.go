@@ -7,7 +7,9 @@ import (
 
 	db "example.com/db/sqlc"
 	"github.com/gin-gonic/gin"
+	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -52,29 +54,69 @@ func (server *Server) CreateUser(c *gin.Context) {
 		return
 	}
 
-	token, err := server.TokenMaker.CreateToken(user.Username, server.Config.AccessTokenDuration)
+	accessToken, _, err := server.TokenMaker.CreateToken(user.Username, server.Config.AccessTokenDuration)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
+	refreshToken, refreshAccessPayload, err := server.TokenMaker.CreateToken(user.Username, server.Config.RefreshTokenduration)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	_, err = server.Store.CreateSession(c, db.CreateSessionParams{
+		ID: pgtype.UUID{
+			Bytes: [16]byte(refreshAccessPayload.ID.Bytes()),
+			Valid: true,
+		},
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    c.Request.UserAgent(),
+		ClientIp:     c.ClientIP(),
+		ExpiresAt: pgtype.Timestamptz{
+			Time:             refreshAccessPayload.ExpiredAt,
+			InfinityModifier: pgtype.Finite,
+			Valid:            true,
+		},
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// Set refresh token as HTTP-only cookie
+	c.SetCookie(
+		"refresh_token",                                    // name
+		refreshToken,                                       // value
+		int(server.Config.RefreshTokenduration.Seconds()), // maxAge in seconds
+		"/",                                                // path
+		"",                                                 // domain (empty means current domain)
+		true,                                               // secure (true for HTTPS only)
+		true,                                               // httpOnly
+	)
+
 	response := struct {
-		Username      string        `json:"username"`
-		FullName      string        `json:"full_name"`
-		Email         string        `json:"email"`
-		Token         string        `json:"token"`
-		TokenDuration time.Duration `json:"token_duration"`
+		SessionID           uuid.UUID     `json:"session_id"`
+		AccessToken         string        `json:"access_token"`
+		AccessTokenDuration time.Duration `json:"access_token_duration"`
+		Username            string        `json:"username"`
+		FullName            string        `json:"full_name"`
+		Email               string        `json:"email"`
 	}{
-		Username:      user.Username,
-		FullName:      user.FullName,
-		Email:         user.Email,
-		Token:         token,
-		TokenDuration: server.Config.AccessTokenDuration,
+		SessionID:           refreshAccessPayload.ID,
+		AccessToken:         accessToken,
+		AccessTokenDuration: server.Config.AccessTokenDuration,
+		Username:            user.Username,
+		FullName:            user.FullName,
+		Email:               user.Email,
 	}
 
 	c.JSON(http.StatusCreated, response)
-
 }
 
 func (server *Server) GetUser(c *gin.Context) {
@@ -84,8 +126,8 @@ func (server *Server) GetUser(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusUnauthorized, errorResponse(errors.New("not authorized")))
 		return
-
 	}
+	
 	// 4. Use payload.Username to fetch the user
 	user, err := server.Store.GetUser(c, userId.(string))
 	if err != nil {
@@ -101,7 +143,7 @@ func (server *Server) GetUser(c *gin.Context) {
 }
 
 type LoginRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
+	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required,min=6"`
 }
 
@@ -126,18 +168,68 @@ func (server *Server) LoginUser(c *gin.Context) {
 	}
 
 	// 3. Create access token
-	token, err := server.TokenMaker.CreateToken(user.Username, server.Config.AccessTokenDuration)
+	accessToken, _, err := server.TokenMaker.CreateToken(user.Username, server.Config.AccessTokenDuration)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	// 4. Return response
-	c.JSON(http.StatusOK, gin.H{
-		"username":       user.Username,
-		"full_name":      user.FullName,
-		"email":          user.Email,
-		"token":          token,
-		"token_duration": server.Config.AccessTokenDuration,
+	// 4. Create refresh token
+	refreshToken, refreshAccessPayload, err := server.TokenMaker.CreateToken(user.Username, server.Config.RefreshTokenduration)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// 5. Create session
+	_, err = server.Store.CreateSession(c, db.CreateSessionParams{
+		ID: pgtype.UUID{
+			Bytes: [16]byte(refreshAccessPayload.ID.Bytes()),
+			Valid: true,
+		},
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    c.Request.UserAgent(),
+		ClientIp:     c.ClientIP(),
+		ExpiresAt: pgtype.Timestamptz{
+			Time:             refreshAccessPayload.ExpiredAt,
+			InfinityModifier: pgtype.Finite,
+			Valid:            true,
+		},
 	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// Set refresh token as HTTP-only cookie
+	c.SetCookie(
+		"refresh_token",                                    // name
+		refreshToken,                                       // value
+		int(server.Config.RefreshTokenduration.Seconds()), // maxAge in seconds
+		"/",                                                // path
+		"",                                                 // domain (empty means current domain)
+		true,                                               // secure (true for HTTPS only)
+		true,                                               // httpOnly
+	)
+
+	// 6. Return response (without refresh token)
+	response := struct {
+		SessionID           uuid.UUID     `json:"session_id"`
+		AccessToken         string        `json:"access_token"`
+		AccessTokenDuration time.Duration `json:"access_token_duration"`
+		Username            string        `json:"username"`
+		FullName            string        `json:"full_name"`
+		Email               string        `json:"email"`
+	}{
+		SessionID:           refreshAccessPayload.ID,
+		AccessToken:         accessToken,
+		AccessTokenDuration: server.Config.AccessTokenDuration,
+		Username:            user.Username,
+		FullName:            user.FullName,
+		Email:               user.Email,
+	}
+
+	c.JSON(http.StatusOK, response)
 }

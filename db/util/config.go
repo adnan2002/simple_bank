@@ -15,6 +15,8 @@ type Config struct {
 	AppPort   string `mapstructure:"APP_PORT"`
 	Token	  string `mapstructure:"TOKEN"`
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	RefreshTokenduration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	GrpcPort  string `mapstructure:"GRPC_PORT"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

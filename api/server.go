@@ -46,8 +46,11 @@ func NewServer(store db.Store, config util.Config) (*Server, error) {
 	}
 
 
+
+
 	server.Router.POST("/users", server.CreateUser)
 	server.Router.POST("/users/login", server.LoginUser)
+	server.Router.POST("/users/auth/refresh", server.Refresh)
 
 	return server, nil
 }

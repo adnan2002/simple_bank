@@ -1,0 +1,19 @@
+
+syntax = "proto3";
+
+package pb;
+
+option go_package = "example.com/pb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+
+
+
+
+message GetUserResponse {
+  string username = 1;
+  string full_name = 2;
+  string email = 3;
+}
